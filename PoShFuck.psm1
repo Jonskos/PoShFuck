@@ -121,8 +121,7 @@ param(
 		"Startpage" {Start-Process "https://www.startpage.com/sp/search?query=$query"}
 		"Custom:*" {
 			$engineurl = $enginetype.substring(7)
-			$urlregex = "^https?://[^\s\/$.?#].[^\s]*$"
-			if ($engineurl -match $urlregex) {
+			if (ValidateURL($engineurl)) {
 				Start-Process $engineurl.Replace("[query]", $query)
 			} else {
 				throw "Invalid search engine URL"
@@ -131,6 +130,43 @@ param(
 		default {
 			throw "Search engine $enginetype not found."
 		}
+	}
+}
+
+Function Set-FuckingEngine {
+<#
+	.SYNOPSIS
+	Changes search engine used by Get-FuckingHelp
+
+	.DESCRIPTION
+	Changes search engine used by Get-FuckingHelp
+
+	.PARAMETER URL
+	URL for the custom search engine. Include a [query] placeholder for the query.
+
+	.EXAMPLE
+	Set-FuckingEngine Google
+
+	.EXAMPLE
+	Set-FuckingEngine Custom -URL https://google.com/search?q=[query]
+#>
+param(
+	[Parameter(Mandatory=$true)]
+	[ValidateSet("Google", "DuckDuckGo", "Ecosia", "Yandex", "Yahoo", "Brave", "Startpage", "Custom")]
+	[string]$SearchEngine,
+
+	[string]$URL
+)
+
+	if ($SearchEngine -eq "Custom") {
+		if (ValidateURL($URL)) {
+			if (!$URL.Contains("[query]")) {Write-Warning "URL does not include the [query] placeholder. Is this intentional?"}
+			[System.Environment]::SetEnvironmentVariable("TheFuckSearchEngine", "Custom:$URL", "User")
+		} else {
+			throw "Invalid search engine URL"
+		}
+	} else {
+		[System.Environment]::SetEnvironmentVariable("TheFuckSearchEngine", $SearchEngine, "User")
 	}
 }
 
@@ -414,6 +450,19 @@ Function IsExtParameterFucked {
 	}
 	
 	return $false
+}
+
+Function ValidateURL {
+param(
+	[string]$URL
+)
+
+	$urlregex = "^https?://[^\s\/$.?#].[^\s]*$"
+	if ($URL -match $urlregex) {
+		return $true
+	} else {
+		return $false
+	}
 }
 
 Export-ModuleMember *-*
