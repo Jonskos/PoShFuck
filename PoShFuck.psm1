@@ -82,17 +82,55 @@
 Function Get-FuckingHelp {
 <#
 	.SYNOPSIS
-	Googles your last error message.
+	Looks up your last error message.
 	.DESCRIPTION
-	Googles your last error message.
+	Looks up your last error message.
 	.EXAMPLE
 	Get-FuckingHelp
 #>
+param(
+	[ValidateSet("Google", "DuckDuckGo", "Ecosia", "Yandex", "Yahoo", "Brave", "Startpage", "Custom")]
+	[string]$SearchEngine = $Env:TheFuckSearchEngine,
+
+	[string]$URL
+)
+
 	try {
 		$preverr = ($global:Error[0].ToString() -split [regex]::Escape([environment]::newline))
-		Start-Process "http://www.google.com/search?q=PowerShell $preverr"
 	} catch {
 		throw "WTF are you doing? Cannot Get-FuckingHelp without a previous error."
+	}
+
+	Add-Type -AssemblyName "System.Web"
+	$query = "PowerShell+$([System.Web.HttpUtility]::UrlEncode($preverr))"
+	if ($null -eq $SearchEngine) {
+		$enginetype = "Google"
+	} elseif ($SearchEngine -eq "Custom") {
+		$enginetype = "Custom:$URL"
+	} else {
+		$enginetype = $SearchEngine
+	}
+	
+	switch -Wildcard ($enginetype) {
+		"DuckDuckGo" {Start-Process "https://duckduckgo.com/?q=$query"}
+		"Google" {Start-Process "https://www.google.com/search?q=$query"}
+		"Ecosia" {Start-Process "https://www.ecosia.org/search?q=$query"}
+		"Yandex" {Start-Process "https://yandex.com/search/?text=$query"}
+		"Yahoo" {Start-Process "https://search.yahoo.com/search?p=$query"}
+		"Brave" {Start-Process "https://search.brave.com/search?q=$query"}
+		"Startpage" {Start-Process "https://www.startpage.com/sp/search?query=$query"}
+		"Custom:*" {
+			$engineurl = $enginetype.substring(7)
+			$urlregex = "^https?://[^\s\/$.?#].[^\s]*$"
+			if ($engineurl -match $urlregex) {
+				Start-Process $engineurl.Replace("[query]", $query)
+			} else {
+				throw "Invalid search engine URL"
+			}
+		}
+		default {
+			throw "Search engine $enginetype not found."
+		}
 	}
 }
 
