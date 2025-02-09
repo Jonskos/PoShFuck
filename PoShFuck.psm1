@@ -119,6 +119,7 @@ param(
 		"Yahoo" {Start-Process "https://search.yahoo.com/search?p=$query"}
 		"Brave" {Start-Process "https://search.brave.com/search?q=$query"}
 		"Startpage" {Start-Process "https://www.startpage.com/sp/search?query=$query"}
+		"Bing" {Start-Process "https://www.bing.com/search?q=$query"}
 		"Custom:*" {
 			$engineurl = $enginetype.substring(7)
 			if (ValidateURL($engineurl)) {
